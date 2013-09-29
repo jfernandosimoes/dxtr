@@ -1,7 +1,7 @@
 CC=gcc
 DIR_BUILD=.
 
-CFLAGS=-Wall
+CFLAGS=-Wall -g
 LDFLAGS=
 
 SOURCES=main.c

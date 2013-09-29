@@ -95,29 +95,22 @@ int main ( int argc , char **argv )
 static void local_display_usage ( void )
 {
     puts("");
-    puts("You doesn't seem to have any idea of what you are doing.");
     puts("");
-    puts("The purpose of this program is write a file on the UART. This can be handy when you ");
-    puts("want to use a decent IDE like EMACS or even Eclipse to write PLC scripts instead of typing");
-    puts("each line on the prompt or switching pen drives like a monkey.");
+    puts("The purpose of this program is write a file on the UART. This can be handy when");
+    puts("you want to use a IDE like EMACS or even Eclipse to write PLC scripts instead");
+    puts("of typing each line in the prompt or switching pen drives.");
     puts("");
-    puts("So basically the usage is:    dxtr filename [-t timeout seconds] [-w]");
+    puts("USAGE");
     puts("");
-    puts("It will open /dev/tty.usbserial and dump the file there. Whenever the PLC takes more");
-    puts("than timeout (n) seconds - default is two seconds - to print anything back, it will close.");
+    puts("    dxtr filename [-t timeout seconds] [-w]");
     puts("");
-    puts("If you used -w, it will use the Disaster Recovery protocol (see tech spec ART 1309280001.1)");
-    puts("and will first send a 'hey im uploading shit' byte followed by a 32-bit LE integer with");
-    puts("the size of the incoming data, not including the first 5 bytes. I hope you don't need to");
-    puts("use -w, that means I screwed up the code enabling you to brick the PLC using LUA.");
+    puts("It will open /dev/tty.usbserial and dump the file there. Whenever the PLC takes");
+    puts("more than timeout (n) seconds - default is two seconds - to print anything back,");
+    puts("execution will be finished.");
     puts("");
-    puts("Obviously this won't work on Windows. If you are using Windows, try your Ask toolbar in");
-    puts("the Internet Explorer to find something similar to download on the Internet. Or go ahead");
-    puts("and code it yourself, this one here took a couple of hours on a Sunday morning. Instead");
-    puts("of going to the church or sleeping your hangover in, wake up and do something useful.");
-    puts("");
-    puts("Thanks for reading until here. Seems you got plenty of spare time in your hands. If I need");
-    puts("to print this again I'll consider deleting myself to prevent you from doing even more damage.");
+    puts("If -w is used it will use the Recovery Protocol (tech spec ART 1309280001.1)");
+    puts("and will first send a notification byte followed by a 32-bit LE integer with the");
+    puts("amount of incoming data, not including the first 5 bytes.");
     puts("");
 }
 // ----------------------------------------------------------------------------
