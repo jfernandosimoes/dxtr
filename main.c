@@ -22,6 +22,7 @@ static void local_display_usage ( void);
 static void local_reset_last_communication_timer ( void);
 static uint32_t local_miliseconds_since_last_communication ( void);
 static bool local_send_file_uart ( char *filename, int uart);
+static bool valid_params ( int argc , char **argv );
 
 // ----------------------------------------------------------------------------
 
@@ -34,61 +35,83 @@ int main ( int argc , char **argv )
 {
     int return_value = -1;
 
-    uint32_t timeout_ms = 2000;
-
-    puts("Connecting to PLC-ART");
-
-    int uart = open("/dev/tty.usbserial", O_RDWR | O_NOCTTY | O_NDELAY);
-
-    if (uart == -1)
+    if (valid_params(argc, argv))
     {
-        perror("Unable to open /dev/tty.usbserial");
-    }
-    else if (argc > 1)
-    {
-        puts ("Successfully opened.");
+        uint32_t timeout_ms = 2000;
 
-        local_config_port(uart);
-        local_reset_last_communication_timer();
+        puts("Connecting to PLC-ART...");
 
-        /*
-         * Start a new reading thread.
-         */
-        pthread_t thread_receive;
-        pthread_create(&thread_receive, NULL, local_thread_read, &uart);
+        int uart = open("/dev/tty.usbserial", O_RDWR | O_NOCTTY | O_NDELAY);
 
-        write(uart, "\r", 1);
-
-        /*
-         * First argument is filename.
-         */
-        if (local_send_file_uart(argv [1], uart))
+        if (uart == -1)
         {
-            /*
-             * Wait until timeout.
-             */
-            while (local_miliseconds_since_last_communication() < timeout_ms)
-            {
-                sleep(1);
-            }
+            perror("Unable to open /dev/tty.usbserial");
         }
+        else if (argc > 1)
+        {
+            puts ("Successfully opened.");
 
-        /*
-         * Shutdown reading thread and wait.
-         */
-        _shutdown_request = true;
-        pthread_join(thread_receive, NULL);
+            local_config_port(uart);
+            local_reset_last_communication_timer();
 
-        close(uart);
-        return_value = 0;
+            /*
+             * Start a new reading thread.
+             */
+            pthread_t thread_receive;
+            pthread_create(&thread_receive, NULL, local_thread_read, &uart);
+
+            write(uart, "\r", 1);
+
+            /*
+             * First argument is filename.
+             */
+            if (local_send_file_uart(argv [1], uart))
+            {
+                /*
+                 * Wait until timeout.
+                 */
+                while (local_miliseconds_since_last_communication() < timeout_ms)
+                {
+                    sleep(1);
+                }
+            }
+
+            /*
+             * Shutdown reading thread and wait.
+             */
+            _shutdown_request = true;
+            pthread_join(thread_receive, NULL);
+
+            close(uart);
+            return_value = 0;
+        }
     }
 
+    /*
+     * Display help to the user if something went wrong.
+     */
     if (return_value != 0)
     {
         local_display_usage();
     }
 
     return return_value;
+}
+// ----------------------------------------------------------------------------
+
+static bool valid_params ( int argc , char **argv )
+{
+    bool result = false;
+
+    /*
+     * Check if there is a filename, if exists and if is a LUA file.
+     */
+    if (argc > 1)
+    {
+        result = true;
+    }
+
+    return result;
 }
 // ----------------------------------------------------------------------------
 
@@ -149,6 +172,7 @@ static void* local_thread_read ( void* param )
             local_reset_last_communication_timer();
             buffer [amount_read] = 0;
             printf("%s", buffer);
+            fflush(stdout);
         }
         else // nothing read, sleep for a bit
         {
