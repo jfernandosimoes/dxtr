@@ -1,7 +1,10 @@
+config(colors, false)
+
 function go(x)
   for i=1, x do
-    lcd(string.format("%d",i), "")
-    sleep(1000)
+    lcd(string.format("  %03d  ",i), "")
+    print(i);
+    sleep(500)
   end
 end
 
