@@ -17,6 +17,7 @@ typedef struct
     char* filename;
     bool binary;
     char* uart_address;
+    uint32_t uart_speed;
     int uart_descriptor;
     int32_t timeout;
     bool timeout_activated;
@@ -28,7 +29,7 @@ typedef struct
 
 static bool local_get_context ( int argc , char **argv, parameters_context_t *context );
 static void* local_thread_read ( void* context);
-static void local_config_port ( int uart);
+static void local_config_port ( int uart, uint32_t speed );
 static void local_display_usage ( void);
 static void local_reset_last_communication_timer ( void);
 static uint32_t local_miliseconds_since_last_communication ( void);
@@ -60,7 +61,7 @@ int main ( int argc , char **argv )
         {
             puts ("Successfully opened.");
 
-            local_config_port(context.uart_descriptor);
+            local_config_port(context.uart_descriptor, context.uart_speed);
             local_reset_last_communication_timer();
 
             /*
@@ -123,6 +124,7 @@ static bool local_get_context ( int argc , char **argv, parameters_context_t *co
     context->filename = NULL;
     context->binary = false;
     context->uart_address = "/dev/tty.usbserial";
+    context->uart_speed = B9600;
     context->uart_descriptor = 0;
     context->timeout = 2000;
     context->timeout_activated = true;
@@ -143,6 +145,18 @@ static bool local_get_context ( int argc , char **argv, parameters_context_t *co
 
             context->timeout = atoi(argv[pos + 1]);
             context->timeout_activated = (context->timeout > 0) ? true : false;
+            pos++;
+
+        }
+        if (strcmp(argv[pos], "-s") == 0) // speed
+        {
+            if (pos == argc - 1)
+            {
+                result = false;
+                break;
+            }
+
+            context->uart_speed = atoi(argv[pos + 1]);
             pos++;
 
         }
@@ -181,6 +195,7 @@ static bool local_get_context ( int argc , char **argv, parameters_context_t *co
         printf("filename:%s\r\n", context->filename);
         printf("binary mode:%s\r\n", (context->binary) ? "true" : "false");
         printf("uart address:%s\r\n", context->uart_address);
+        printf("uart speed:%d\r\n", context->uart_speed);
         printf("timeout:%s\r\n", (context->timeout_activated) ? "true" : "false");
         if (context->timeout_activated)
             printf("        %d ms\r\n", context->timeout);
@@ -202,18 +217,27 @@ static void local_display_usage ( void )
     puts("");
     puts("    dxtr filename [-t timeout seconds] [-u uart address] [-d]");
     puts("");
-    puts("It will open /dev/tty.usbserial and dump the file there. Whenever the PLC takes");
-    puts("more than timeout (n) seconds - default is two seconds - to print anything back,");
-    puts("execution will be finished.");
+    puts("It will open /dev/tty.usbserial and dump the file there. ");
     puts("");
-    puts("If -d is used it will use the Recovery Protocol (tech spec ART 1309280001.1)");
-    puts("and will first send a notification byte followed by a 32-bit LE integer with the");
-    puts("amount of incoming data, not including the first 5 bytes.");
+    puts("Parameters:");
+    puts("");
+    puts("  filename          File to be written in the serial port.");
+    puts("  -u uart_address   UART address. If not specified, assume /dev/tty.usbserial.");
+    puts("  -s speed          UART speed. If not specified will assume 9600 baud as default.");
+    puts("  -t timeout        Whenever the PLC takes more than timeout (n) seconds to print ");
+    puts("                    anything back, execution will be finished. Default timeout ");
+    puts("                    is two seconds.");
+    puts("  -d                Enable the Recovery Protocol (tech spec ART 1309280001.1)");
+    puts("                    first sending a notification byte followed by a 32-bit LE ");
+    puts("                    integer with the amount of incoming data, not including ");
+    puts("                    the first 5 bytes.");
+    puts("  -h                Display this help message.");
+    puts("  -b                Enable binary mode. In binary mode, all data will be sent as it.");
     puts("");
 }
 // ----------------------------------------------------------------------------
 
-static void local_config_port ( int uart )
+static void local_config_port ( int uart, uint32_t speed )
 {
     /*
      * Read will return immediately.
@@ -225,8 +249,8 @@ static void local_config_port ( int uart )
      */
     struct termios options;
     tcgetattr(uart, &options);
-    cfsetispeed(&options, B57600);
-    cfsetospeed(&options, B57600);
+    cfsetispeed(&options, speed);
+    cfsetospeed(&options, speed);
     options.c_cflag |= (CLOCAL | CREAD);
     tcsetattr(uart, TCSANOW, &options);
 }
